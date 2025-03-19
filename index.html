@@ -109,14 +109,44 @@
 
         function handleFile(file) {
             if (file && file.type.startsWith('image/')) {
+                // Show analyze button and reset results
+                preview.classList.add('hidden');
+                analyzeBtn.classList.add('hidden');
+                results.classList.add('hidden');
+                
+                // Validate file size
+                if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                    showError("File is too large. Maximum size is 10MB.");
+                    return;
+                }
+                
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     imagePreview.src = e.target.result;
                     preview.classList.remove('hidden');
                     analyzeBtn.classList.remove('hidden');
                 };
+                reader.onerror = () => {
+                    showError("Error reading file. Please try another image.");
+                };
                 reader.readAsDataURL(file);
+            } else {
+                showError("Please select a valid image file.");
             }
+        }
+        
+        function showError(message) {
+            analysisResults.innerText = message;
+            analysisResults.classList.add('text-red-500');
+            results.classList.remove('hidden');
+            
+            // Clear error after 5 seconds
+            setTimeout(() => {
+                if (analysisResults.innerText === message) {
+                    results.classList.add('hidden');
+                    analysisResults.classList.remove('text-red-500');
+                }
+            }, 5000);
         }
 
         // Define the prompt template
@@ -187,16 +217,27 @@ If you cannot make a confident prediction for any metric, please state so rather
             } catch (error) {
                 console.error("Error analyzing image:", error);
                 
+                // Handle specific error types
+                let errorMessage = `An error occurred: ${error.message}`;
+                if (error.message.includes("API key")) {
+                    errorMessage = "Invalid API key. Please check your Google Gemini API key and try again.";
+                } else if (error.message.includes("network")) {
+                    errorMessage = "Network error. Please check your internet connection and try again.";
+                } else if (error.message.includes("quota")) {
+                    errorMessage = "API quota exceeded. Please try again later or use a different API key.";
+                }
+                
                 return {
                     success: false,
-                    analysis: `An error occurred while analyzing the image: ${error.message}\n\nPlease check your API key and try again.`
+                    analysis: errorMessage
                 };
             }
         }
 
         analyzeBtn.addEventListener('click', async () => {
             if (!imagePreview.src) return;
-
+            
+            analysisResults.classList.remove('text-red-500');
             loading.classList.remove('hidden');
             analyzeBtn.classList.add('hidden');
             results.classList.add('hidden');
@@ -210,10 +251,12 @@ If you cannot make a confident prediction for any metric, please state so rather
                     results.classList.remove('hidden');
                 } else {
                     analysisResults.innerText = response.analysis;
+                    analysisResults.classList.add('text-red-500');
                     results.classList.remove('hidden');
                 }
             } catch (error) {
                 analysisResults.innerText = 'An error occurred during analysis. Please try again.';
+                analysisResults.classList.add('text-red-500');
                 results.classList.remove('hidden');
             } finally {
                 loading.classList.add('hidden');

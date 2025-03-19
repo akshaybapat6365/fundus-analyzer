@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fundus Image Analyzer</title>
+    <!-- Inter font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <!-- Tailwind CSS and Shadcn UI styling -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --background: 0 0% 0%;              /* Pure black */
+            --foreground: 0 0% 98%;             /* Off-white text */
+            --card: 0 0% 5%;                    /* Very dark gray, almost black */
+            --card-foreground: 0 0% 98%;        /* Off-white text */
+            --popover: 0 0% 0%;                 /* Pure black */
+            --popover-foreground: 0 0% 98%;     /* Off-white text */
+            --primary: 230 100% 50%;            /* Keep blue for interactive elements */
+            --primary-foreground: 0 0% 100%;    /* White text on primary */
+            --secondary: 0 0% 10%;              /* Dark gray for secondary elements */
+            --secondary-foreground: 0 0% 98%;   /* Off-white text */
+            --muted: 0 0% 15%;                  /* Dark gray for muted elements */
+            --muted-foreground: 0 0% 60%;       /* Medium gray text */
+            --accent: 0 0% 10%;                 /* Dark gray for accent elements */
+            --accent-foreground: 0 0% 98%;      /* Off-white text */
+            --destructive: 0 100% 30%;          /* Keep red for destructive actions */
+            --destructive-foreground: 0 0% 98%; /* Off-white text */
+            --border: 0 0% 15%;                 /* Dark gray border */
+            --input: 0 0% 15%;                  /* Dark gray input background */
+            --ring: 230 100% 50%;               /* Blue for focus rings */
+            --radius: 0.5rem;
+        }
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #000000;  /* Ensure pure black background */
+            color: hsl(var(--foreground));
+        }
+
+        .card {
+            background-color: #0d0d0d;  /* Very dark gray, almost black */
+            border: 1px solid hsl(var(--border));
+            border-radius: var(--radius);
+        }
+
+        .btn-primary {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--foreground));
+            border-radius: var(--radius);
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .dropzone {
+            border: 2px dashed #262626;  /* Dark gray border */
+            border-radius: var(--radius);
+            transition: all 0.3s ease;
+        }
+
+        .dropzone:hover, .dropzone.active {
+            border-color: hsl(var(--primary));
+            background-color: rgba(0, 0, 0, 0.5);  /* Very dark transparent background */
+        }
+
+        .results-container {
+            background-color: #1a1a1a;  /* Dark gray background */
+            border-radius: var(--radius);
+            white-space: pre-line;
+            line-height: 1.6;
+        }
+
+        .spinner {
+            border: 3px solid #1a1a1a;  /* Dark gray */
+            border-radius: 50%;
+            border-top: 3px solid hsl(var(--primary));
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4">
+    <div class="max-w-2xl mx-auto py-8">
+        <div class="card p-6 shadow-lg">
+            <h1 class="text-3xl font-bold text-center mb-8">Fundus Image Analyzer</h1>
+            
+            <div class="mb-8">
+                <div class="dropzone p-6 text-center" id="dropzone">
+                    <input type="file" id="fileInput" class="hidden" accept="image/*">
+                    <label for="fileInput" class="cursor-pointer block">
+                        <div class="text-center">
+                            <svg class="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            <p class="text-lg mb-2">Drop your fundus image here</p>
+                            <p class="text-sm text-gray-400">or click to select</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="preview" class="hidden mb-8">
+                <img id="imagePreview" class="max-w-full h-auto mx-auto rounded-lg shadow-md" src="" alt="Preview">
+            </div>
+
+            <div id="loading" class="hidden my-4">
+                <div class="flex items-center justify-center">
+                    <div class="spinner"></div>
+                    <span class="ml-2 text-gray-400">Analyzing image...</span>
+                </div>
+            </div>
+
+            <div id="results" class="hidden my-4">
+                <h2 class="text-xl font-semibold mb-3">Analysis Results</h2>
+                <div id="analysisResults" class="results-container p-4"></div>
+            </div>
+
+            <button id="analyzeBtn" class="hidden w-full btn-primary py-2 px-4 mt-4">
+                Analyze Image
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const imagePreview = document.getElementById('imagePreview');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const analysisResults = document.getElementById('analysisResults');
+
+        // Handle drag and drop
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('active');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('active');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('active');
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleFile(file);
+        });
+
+        function handleFile(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    analyzeBtn.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        analyzeBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            loading.classList.remove('hidden');
+            analyzeBtn.classList.add('hidden');
+            results.classList.add('hidden');
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Display the pre-formatted text as is
+                    analysisResults.innerText = data.analysis;
+                    results.classList.remove('hidden');
+                } else {
+                    throw new Error('Analysis failed');
+                }
+            } catch (error) {
+                analysisResults.innerText = 'An error occurred during analysis. Please try again.';
+                results.classList.remove('hidden');
+            } finally {
+                loading.classList.add('hidden');
+                analyzeBtn.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

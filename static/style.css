@@ -63,17 +63,21 @@
 
 * {
     font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
 }
 
 body {
     background-color: #000000;  /* Ensure pure black background */
     color: hsl(var(--foreground));
+    padding: 1rem;
+    margin: 0;
 }
 
 .card {
     background-color: #0d0d0d;  /* Very dark gray, almost black */
     border: 1px solid hsl(var(--border));
     border-radius: var(--radius);
+    overflow: hidden; /* Prevent content overflow */
 }
 
 .btn-primary {
@@ -92,6 +96,7 @@ body {
     border: 2px dashed #262626;  /* Dark gray border */
     border-radius: var(--radius);
     transition: all 0.3s ease;
+    padding: 2rem 1rem; /* Add padding for touch targets */
 }
 
 .dropzone:hover, .dropzone.active {
@@ -104,6 +109,7 @@ body {
     border-radius: var(--radius);
     white-space: pre-line;
     line-height: 1.6;
+    overflow-x: auto; /* Allow horizontal scrolling for long content */
 }
 
 .spinner {
@@ -113,11 +119,6 @@ body {
     width: 24px;
     height: 24px;
     animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
 }
 
 .api-key-container {
@@ -134,4 +135,43 @@ body {
     border-radius: var(--radius);
     padding: 0.5rem;
     width: 100%;
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 640px) {
+    body {
+        padding: 0.5rem;
+    }
+    
+    .card {
+        padding: 1rem !important; /* Override any padding in HTML */
+    }
+    
+    h1 {
+        font-size: 1.5rem !important; /* Smaller heading on mobile */
+    }
+    
+    .dropzone {
+        padding: 1.5rem 0.5rem;
+    }
+    
+    .dropzone svg {
+        height: 2.5rem !important;
+        width: 2.5rem !important;
+    }
+    
+    #imagePreview {
+        max-height: 250px; /* Smaller image preview on mobile */
+    }
+}
+
+/* Tablet responsiveness */
+@media (min-width: 641px) and (max-width: 1024px) {
+    .card {
+        padding: 1.5rem !important;
+    }
+    
+    #imagePreview {
+        max-height: 350px;
+    }
 }

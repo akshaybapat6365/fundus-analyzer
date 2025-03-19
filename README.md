@@ -1,56 +1,72 @@
 # Fundus Image Analyzer
 
-A web application that analyzes fundus images using Google's Gemini AI to predict age, A1C levels, and LDL Cholesterol levels from retinal characteristics.
+![Fundus Analyzer](https://i.imgur.com/example.png)
 
-## Features
+A web application that analyzes fundus (retinal) images using Google's Gemini AI to predict age, A1C levels, and LDL Cholesterol levels from retinal characteristics.
 
-- Pure black dark theme UI with modern Shadcn-inspired design
-- Client-side image processing with Google Gemini AI
-- Immediate analysis results with confidence levels
-- Completely browser-based - no server required
-- Mobile-responsive design
+## 🌟 Features
 
-## Demo
+- **Modern UI**: Pure black dark theme with sleek Shadcn-inspired design
+- **Multiple Run Options**: 
+  - Browser-only mode with client-side processing
+  - FastAPI server with additional features
+  - Simple Python HTTP server for quick deployment
+- **Advanced Analysis**: Uses Google's Gemini 2.0 AI models for precise retinal image analysis
+- **Privacy Focused**: Client-side option processes all images in your browser
 
-Access the live demo: https://yourusername.github.io/fundus-analyzer/
+## 🚀 Quick Start
 
-## How to Use
+### Option 1: Browser Only (No Server)
+1. Open `index.html` directly in your browser
+2. Enter your Google Gemini API key when prompted
+3. Upload a fundus image and analyze
 
-1. Visit the web application
-2. Enter your Google Gemini API key (from [Google AI Studio](https://makersuite.google.com/))
-3. Upload a fundus image by dragging and dropping or clicking to select
-4. Click "Analyze Image"
-5. View the detailed analysis results
+### Option 2: FastAPI Server
+1. Create a `.env` file with your API key: `GOOGLE_API_KEY=your_key_here`
+2. Install requirements: `pip install -r requirements.txt`
+3. Run the server: `python main.py`
+4. Access at `http://localhost:8000`
 
-## API Key
+### Option 3: Simple Server
+1. Create a `.env` file with your API key: `GOOGLE_API_KEY=your_key_here`
+2. Install requirements: `pip install -r requirements.txt`
+3. Run: `python simple_server.py`
+4. Browser should open automatically to `http://localhost:8000`
 
-You need a valid Google Gemini API key to use this application. The app uses the following model:
-- `gemini-2.0-flash-thinking-exp-01-21`
+### Option 4: Docker
+1. Build and run with Docker Compose: `docker-compose up -d`
+2. Access at `http://localhost:8000`
 
-Your API key is stored only in your browser's local storage and is never sent to our servers.
+## 🔑 API Key
 
-## Privacy
+You need a valid Google Gemini API key to use this application. The app uses one of these models:
+- `gemini-2.0-flash-thinking-exp-01-21` (client-side and simple server)
+- `gemini-pro-vision` (FastAPI server)
 
-This application processes all images directly in your browser. No images or data are uploaded to any server other than Google's API for analysis purposes.
+Get your API key from [Google AI Studio](https://makersuite.google.com/).
 
-## Local Development
+## 🔒 Privacy
 
-To run this project locally:
+The browser-only version processes all images directly in your browser. No images or data are uploaded to any server other than Google's API for analysis purposes.
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/yourusername/fundus-analyzer.git
-   ```
+## 💻 Development
 
-2. Open the `index.html` file in your browser or use a local development server.
+### Requirements
+- Python 3.10+
+- Required packages in `requirements.txt`
 
-## Technologies Used
+### Project Structure
+- `index.html` - Standalone browser version
+- `templates/` - HTML templates for FastAPI
+- `static/` - CSS and other static assets
+- `main.py` - FastAPI implementation
+- `simple_server.py` - Simple HTTP server implementation
+- `Dockerfile` & `docker-compose.yml` - Docker configuration
 
-- HTML5/CSS3
-- JavaScript (ES6+)
-- Google Generative AI SDK
-- Tailwind CSS
+## 📄 License
 
-## License
+MIT License
 
-MIT License 
+## 👥 Contributing
+
+Contributions, issues, and feature requests are welcome! 
