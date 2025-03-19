@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple Fundus Analyzer</title>
+    <script src="https://cdn.jsdelivr.net/npm/@google/generative-ai@latest"></script>
     <style>
         body {
             font-family: system-ui, -apple-system, sans-serif;
@@ -229,33 +230,41 @@ Format your response in plain text. For each prediction, explain the key indicat
                 results.textContent = "Connecting to API...";
                 results.style.display = 'block';
                 
+                // We'll try two different models to see which one works
+                // First try gemini-pro-vision
                 let apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-pro-vision:generateContent?key=${apiKey}`;
                 
-                // Try to use a CORS proxy if available
                 try {
-                    // First attempt with direct connection
-                    console.log("Sending request to Google API directly...");
-                    results.textContent = "Sending request to Google API...";
-                
-                    // Create the API request
+                    console.log("Trying with gemini-pro-vision model...");
+                    results.textContent = "Trying with gemini-pro-vision model...";
+                    
+                    // Create the API request body
+                    const requestBody = {
+                        contents: [{
+                            parts: [
+                                { text: PROMPT },
+                                {
+                                    inline_data: {
+                                        mime_type: "image/jpeg",
+                                        data: imageData
+                                    }
+                                }
+                            ]
+                        }],
+                        generationConfig: {
+                            temperature: 0.4,
+                            topK: 32,
+                            topP: 1
+                        }
+                    };
+                    
+                    // Make the API call
                     const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [
-                                    { text: PROMPT },
-                                    {
-                                        inline_data: {
-                                            mime_type: "image/jpeg",
-                                            data: imageData
-                                        }
-                                    }
-                                ]
-                            }]
-                        })
+                        body: JSON.stringify(requestBody)
                     });
                     
                     const data = await response.json();
@@ -270,56 +279,51 @@ Format your response in plain text. For each prediction, explain the key indicat
                     } else {
                         throw new Error("Could not analyze the image. No valid response from API.");
                     }
-                } catch (directError) {
-                    console.error('Direct API error:', directError);
+                } catch (firstError) {
+                    console.error('First model error:', firstError);
                     
-                    // If CORS error, try with fallback model
-                    if (directError.message.includes('CORS') || directError.name === 'TypeError') {
-                        console.log("CORS error detected. Trying with gemini-1.5-pro model...");
-                        results.textContent = "First attempt failed (CORS). Trying with gemini-1.5-pro model...";
+                    // Try the second model
+                    try {
+                        console.log("First model failed. Trying with gemini-1.5-pro...");
+                        results.textContent = "First attempt failed. Trying with gemini-1.5-pro...";
                         
-                        try {
-                            // Try with gemini-1.5-pro
-                            const fallbackUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
-                            
-                            const fallbackResponse = await fetch(fallbackUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    contents: [{
-                                        parts: [
-                                            { text: PROMPT },
-                                            {
-                                                inline_data: {
-                                                    mime_type: "image/jpeg",
-                                                    data: imageData
-                                                }
+                        const fallbackUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+                        
+                        // Make the same request with the fallback model
+                        const fallbackResponse = await fetch(fallbackUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                contents: [{
+                                    parts: [
+                                        { text: PROMPT },
+                                        {
+                                            inline_data: {
+                                                mime_type: "image/jpeg",
+                                                data: imageData
                                             }
-                                        ]
-                                    }]
-                                })
-                            });
-                            
-                            const fallbackData = await fallbackResponse.json();
-                            console.log("Fallback API Response:", fallbackData);
-                            
-                            if (fallbackData.candidates && fallbackData.candidates[0] && fallbackData.candidates[0].content) {
-                                const text = fallbackData.candidates[0].content.parts[0].text;
-                                results.textContent = text;
-                            } else if (fallbackData.error) {
-                                throw new Error(fallbackData.error.message || JSON.stringify(fallbackData.error));
-                            } else {
-                                throw new Error("Could not analyze the image using fallback model.");
-                            }
-                        } catch (fallbackError) {
-                            console.error('Fallback model error:', fallbackError);
-                            throw fallbackError;
+                                        }
+                                    ]
+                                }]
+                            })
+                        });
+                        
+                        const fallbackData = await fallbackResponse.json();
+                        console.log("Fallback API Response:", fallbackData);
+                        
+                        if (fallbackData.candidates && fallbackData.candidates[0] && fallbackData.candidates[0].content) {
+                            const text = fallbackData.candidates[0].content.parts[0].text;
+                            results.textContent = text;
+                        } else if (fallbackData.error) {
+                            throw new Error(fallbackData.error.message || JSON.stringify(fallbackData.error));
+                        } else {
+                            throw new Error("Could not analyze the image using fallback model.");
                         }
-                    } else {
-                        // Not a CORS error, rethrow
-                        throw directError;
+                    } catch (secondError) {
+                        console.error('Second model error:', secondError);
+                        throw secondError; // Propagate the error
                     }
                 }
                 
