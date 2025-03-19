@@ -4,6 +4,10 @@
 
 A web application that analyzes fundus (retinal) images using Google's Gemini AI to predict age, A1C levels, and LDL Cholesterol levels from retinal characteristics.
 
+## Live Demo
+
+Visit the live application: [https://akshaybapat6365.github.io/fundus-analyzer/](https://akshaybapat6365.github.io/fundus-analyzer/)
+
 ## 🌟 Features
 
 - **Modern UI**: Pure black dark theme with sleek Shadcn-inspired design
