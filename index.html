@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fundus Image Analyzer</title>
+    <!-- Inter font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="static/style.css" rel="stylesheet">
+</head>
+<body class="min-h-screen p-4">
+    <div class="max-w-2xl mx-auto py-8">
+        <div class="card p-6 shadow-lg">
+            <h1 class="text-3xl font-bold text-center mb-8">Fundus Image Analyzer</h1>
+            
+            <div class="api-key-container">
+                <label for="apiKey" class="block mb-2">Google API Key</label>
+                <input type="password" id="apiKey" placeholder="Enter your Google Gemini API key" class="api-key-input mb-2">
+                <div class="text-xs text-gray-400">
+                    <p>Get your API key from <a href="https://makersuite.google.com/" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">Google AI Studio</a></p>
+                    <p>Your API key is stored locally and never sent to our servers.</p>
+                </div>
+            </div>
+            
+            <div class="mb-8">
+                <div class="dropzone p-6 text-center" id="dropzone">
+                    <input type="file" id="fileInput" class="hidden" accept="image/*">
+                    <label for="fileInput" class="cursor-pointer block">
+                        <div class="text-center">
+                            <svg class="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            <p class="text-lg mb-2">Drop your fundus image here</p>
+                            <p class="text-sm text-gray-400">or click to select</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="preview" class="hidden mb-8">
+                <img id="imagePreview" class="max-w-full h-auto mx-auto rounded-lg shadow-md" src="" alt="Preview">
+            </div>
+
+            <div id="loading" class="hidden my-4">
+                <div class="flex items-center justify-center">
+                    <div class="spinner"></div>
+                    <span class="ml-2 text-gray-400">Analyzing image...</span>
+                </div>
+            </div>
+
+            <div id="results" class="hidden my-4">
+                <h2 class="text-xl font-semibold mb-3">Analysis Results</h2>
+                <div id="analysisResults" class="results-container p-4"></div>
+            </div>
+
+            <button id="analyzeBtn" class="hidden w-full btn-primary py-2 px-4 mt-4">
+                Analyze Image
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@google/generative-ai@0.1.3/dist/generative-ai.min.js"></script>
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const imagePreview = document.getElementById('imagePreview');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const analysisResults = document.getElementById('analysisResults');
+        const apiKeyInput = document.getElementById('apiKey');
+
+        // Try to load API key from local storage
+        const savedApiKey = localStorage.getItem('geminiApiKey');
+        if (savedApiKey) {
+            apiKeyInput.value = savedApiKey;
+        }
+
+        // Save API key to local storage when changed
+        apiKeyInput.addEventListener('change', () => {
+            localStorage.setItem('geminiApiKey', apiKeyInput.value);
+        });
+
+        // Handle drag and drop
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('active');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('active');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('active');
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleFile(file);
+        });
+
+        function handleFile(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    analyzeBtn.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Define the prompt template
+        const PROMPT_TEMPLATE = `
+Analyze this fundus image and provide the following information:
+
+1. Estimated age of the person (within 2 years)
+- Include confidence level (%)
+- Base this on retinal characteristics, vessel patterns, and any age-related changes
+
+2. Estimated A1C level
+- Include confidence level (%)
+- Consider vessel health, any diabetic changes, and microaneurysms if present
+- Provide the value in % with a normal range of 4-5.6%
+
+3. Estimated LDL Cholesterol level
+- Include confidence level (%)
+- Look for signs of arteriolar narrowing, vessel changes
+- Provide the value in mg/dL with optimal being <100 mg/dL
+
+Format your response in plain text (not markdown) with simple sections for each category.
+For each prediction, explain the key indicators that led to your assessment.
+If you cannot make a confident prediction for any metric, please state so rather than guessing.`;
+
+        async function analyzeImageWithGemini(imageBase64) {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                return {
+                    success: false,
+                    analysis: "Please enter your Google API key to analyze images."
+                };
+            }
+
+            try {
+                // Initialize the Generative AI SDK
+                const genAI = new GoogleGenerativeAI(apiKey);
+                
+                // Create a generative model instance
+                const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-thinking-exp-01-21" });
+                
+                // Prepare the image for the API
+                const imageData = imageBase64.split(',')[1]; // Remove the data URL prefix
+                
+                // Create the request
+                const result = await model.generateContent([
+                    PROMPT_TEMPLATE,
+                    {
+                        inlineData: {
+                            data: imageData,
+                            mimeType: "image/jpeg"
+                        }
+                    }
+                ]);
+                
+                const response = await result.response;
+                const text = response.text();
+                
+                // Clean the formatting
+                const cleanedText = text
+                    .replace(/#+\s/g, '') // Remove headers
+                    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+                    .replace(/\*(.*?)\*/g, '$1'); // Remove italic
+                
+                return {
+                    success: true,
+                    analysis: cleanedText
+                };
+            } catch (error) {
+                console.error("Error analyzing image:", error);
+                
+                return {
+                    success: false,
+                    analysis: `An error occurred while analyzing the image: ${error.message}\n\nPlease check your API key and try again.`
+                };
+            }
+        }
+
+        analyzeBtn.addEventListener('click', async () => {
+            if (!imagePreview.src) return;
+
+            loading.classList.remove('hidden');
+            analyzeBtn.classList.add('hidden');
+            results.classList.add('hidden');
+
+            try {
+                const response = await analyzeImageWithGemini(imagePreview.src);
+                
+                if (response.success) {
+                    // Display the pre-formatted text as is
+                    analysisResults.innerText = response.analysis;
+                    results.classList.remove('hidden');
+                } else {
+                    analysisResults.innerText = response.analysis;
+                    results.classList.remove('hidden');
+                }
+            } catch (error) {
+                analysisResults.innerText = 'An error occurred during analysis. Please try again.';
+                results.classList.remove('hidden');
+            } finally {
+                loading.classList.add('hidden');
+                analyzeBtn.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html> 

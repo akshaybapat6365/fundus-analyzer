@@ -1,0 +1,137 @@
+/* Custom styles for the fundus analyzer */
+.border-2.border-dashed {
+    transition: all 0.3s ease;
+}
+
+.border-2.border-dashed:hover {
+    border-color: #3B82F6;
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+#dropzone.border-blue-500 {
+    border-color: #3B82F6;
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+#imagePreview {
+    max-height: 400px;
+    object-fit: contain;
+}
+
+#analysisResults {
+    white-space: pre-line;
+    line-height: 1.6;
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Fundus Image Analyzer Styles */
+
+:root {
+    --background: 0 0% 0%;              /* Pure black */
+    --foreground: 0 0% 98%;             /* Off-white text */
+    --card: 0 0% 5%;                    /* Very dark gray, almost black */
+    --card-foreground: 0 0% 98%;        /* Off-white text */
+    --popover: 0 0% 0%;                 /* Pure black */
+    --popover-foreground: 0 0% 98%;     /* Off-white text */
+    --primary: 230 100% 50%;            /* Keep blue for interactive elements */
+    --primary-foreground: 0 0% 100%;    /* White text on primary */
+    --secondary: 0 0% 10%;              /* Dark gray for secondary elements */
+    --secondary-foreground: 0 0% 98%;   /* Off-white text */
+    --muted: 0 0% 15%;                  /* Dark gray for muted elements */
+    --muted-foreground: 0 0% 60%;       /* Medium gray text */
+    --accent: 0 0% 10%;                 /* Dark gray for accent elements */
+    --accent-foreground: 0 0% 98%;      /* Off-white text */
+    --destructive: 0 100% 30%;          /* Keep red for destructive actions */
+    --destructive-foreground: 0 0% 98%; /* Off-white text */
+    --border: 0 0% 15%;                 /* Dark gray border */
+    --input: 0 0% 15%;                  /* Dark gray input background */
+    --ring: 230 100% 50%;               /* Blue for focus rings */
+    --radius: 0.5rem;
+}
+
+* {
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: #000000;  /* Ensure pure black background */
+    color: hsl(var(--foreground));
+}
+
+.card {
+    background-color: #0d0d0d;  /* Very dark gray, almost black */
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+}
+
+.btn-primary {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--foreground));
+    border-radius: var(--radius);
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+.dropzone {
+    border: 2px dashed #262626;  /* Dark gray border */
+    border-radius: var(--radius);
+    transition: all 0.3s ease;
+}
+
+.dropzone:hover, .dropzone.active {
+    border-color: hsl(var(--primary));
+    background-color: rgba(0, 0, 0, 0.5);  /* Very dark transparent background */
+}
+
+.results-container {
+    background-color: #1a1a1a;  /* Dark gray background */
+    border-radius: var(--radius);
+    white-space: pre-line;
+    line-height: 1.6;
+}
+
+.spinner {
+    border: 3px solid #1a1a1a;  /* Dark gray */
+    border-radius: 50%;
+    border-top: 3px solid hsl(var(--primary));
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.api-key-container {
+    background-color: #1a1a1a;
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.api-key-input {
+    background-color: #262626;
+    color: white;
+    border: 1px solid #333;
+    border-radius: var(--radius);
+    padding: 0.5rem;
+    width: 100%;
+}
