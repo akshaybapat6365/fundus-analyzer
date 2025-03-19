@@ -6,8 +6,10 @@
     <title>Fundus Image Analyzer</title>
     <!-- Inter font -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-    <!-- Tailwind CSS and Shadcn UI styling -->
+    <!-- Tailwind CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Google's Generative AI SDK -->
+    <script src="https://www.gstatic.com/ai/generativelanguage/js/generativeai.js"></script>
     <style>
         :root {
             --background: 0 0% 0%;              /* Pure black */
@@ -59,6 +61,11 @@
             opacity: 0.9;
         }
 
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .dropzone {
             border: 2px dashed #262626;  /* Dark gray border */
             border-radius: var(--radius);
@@ -90,6 +97,22 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .api-key-container {
+            background-color: #1a1a1a;
+            border-radius: var(--radius);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .api-key-input {
+            background-color: #262626;
+            color: white;
+            border: 1px solid #333;
+            border-radius: var(--radius);
+            padding: 0.5rem;
+            width: 100%;
+        }
     </style>
 </head>
 <body class="min-h-screen p-4">
@@ -97,6 +120,12 @@
         <div class="card p-6 shadow-lg">
             <h1 class="text-3xl font-bold text-center mb-8">Fundus Image Analyzer</h1>
             
+            <div class="api-key-container mb-6">
+                <label for="apiKey" class="block text-sm font-medium mb-2">Google Gemini API Key</label>
+                <input type="password" id="apiKey" class="api-key-input" placeholder="Enter your API key">
+                <p class="text-xs text-gray-400 mt-2">Get your API key from <a href="https://makersuite.google.com/" class="text-blue-400 hover:text-blue-300" target="_blank" rel="noopener noreferrer">Google AI Studio</a></p>
+            </div>
+
             <div class="mb-8">
                 <div class="dropzone p-6 text-center" id="dropzone">
                     <input type="file" id="fileInput" class="hidden" accept="image/*">
@@ -128,7 +157,7 @@
                 <div id="analysisResults" class="results-container p-4"></div>
             </div>
 
-            <button id="analyzeBtn" class="hidden w-full btn-primary py-2 px-4 mt-4">
+            <button id="analyzeBtn" class="hidden w-full btn-primary py-2 px-4 mt-4" disabled>
                 Analyze Image
             </button>
         </div>
@@ -143,6 +172,25 @@
         const loading = document.getElementById('loading');
         const results = document.getElementById('results');
         const analysisResults = document.getElementById('analysisResults');
+        const apiKeyInput = document.getElementById('apiKey');
+
+        // Try to load API key from local storage
+        const savedApiKey = localStorage.getItem('geminiApiKey');
+        if (savedApiKey) {
+            apiKeyInput.value = savedApiKey;
+            analyzeBtn.disabled = false;
+        }
+
+        // Save API key to local storage when changed
+        apiKeyInput.addEventListener('change', () => {
+            if (apiKeyInput.value.trim()) {
+                localStorage.setItem('geminiApiKey', apiKeyInput.value);
+                analyzeBtn.disabled = false;
+            } else {
+                localStorage.removeItem('geminiApiKey');
+                analyzeBtn.disabled = true;
+            }
+        });
 
         // Handle drag and drop
         dropzone.addEventListener('dragover', (e) => {
@@ -173,39 +221,118 @@
                     imagePreview.src = e.target.result;
                     preview.classList.remove('hidden');
                     analyzeBtn.classList.remove('hidden');
+                    analyzeBtn.disabled = !apiKeyInput.value.trim();
                 };
                 reader.readAsDataURL(file);
             }
         }
 
+        // Define the prompt template
+        const PROMPT_TEMPLATE = `
+Analyze this fundus image and provide the following information:
+
+1. Estimated age of the person (within 2 years)
+- Include confidence level (%)
+- Base this on retinal characteristics, vessel patterns, and any age-related changes
+
+2. Estimated A1C level
+- Include confidence level (%)
+- Consider vessel health, any diabetic changes, and microaneurysms if present
+- Provide the value in % with a normal range of 4-5.6%
+
+3. Estimated LDL Cholesterol level
+- Include confidence level (%)
+- Look for signs of arteriolar narrowing, vessel changes
+- Provide the value in mg/dL with optimal being <100 mg/dL
+
+Format your response in plain text (not markdown) with simple sections for each category.
+For each prediction, explain the key indicators that led to your assessment.
+If you cannot make a confident prediction for any metric, please state so rather than guessing.`;
+
+        async function analyzeImageWithGemini(imageBase64) {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                return {
+                    success: false,
+                    analysis: "Please enter your Google API key to analyze images."
+                };
+            }
+
+            try {
+                // Initialize the Generative AI SDK
+                const genAI = new GoogleGenerativeAI(apiKey);
+                
+                // Create a generative model instance
+                const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+                
+                // Prepare the image for the API
+                const imageData = imageBase64.split(',')[1]; // Remove the data URL prefix
+                
+                // Create the request
+                const result = await model.generateContent([
+                    PROMPT_TEMPLATE,
+                    {
+                        inlineData: {
+                            data: imageData,
+                            mimeType: "image/jpeg"
+                        }
+                    }
+                ]);
+                
+                const response = await result.response;
+                const text = response.text();
+                
+                // Clean the formatting
+                const cleanedText = text
+                    .replace(/#+\s/g, '') // Remove headers
+                    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+                    .replace(/\*(.*?)\*/g, '$1'); // Remove italic
+                
+                return {
+                    success: true,
+                    analysis: cleanedText
+                };
+            } catch (error) {
+                console.error("Error analyzing image:", error);
+                
+                // Handle specific error types
+                let errorMessage = `An error occurred: ${error.message}`;
+                if (error.message.includes("API key")) {
+                    errorMessage = "Invalid API key. Please check your Google Gemini API key and try again.";
+                } else if (error.message.includes("network")) {
+                    errorMessage = "Network error. Please check your internet connection and try again.";
+                } else if (error.message.includes("quota")) {
+                    errorMessage = "API quota exceeded. Please try again later or use a different API key.";
+                }
+                
+                return {
+                    success: false,
+                    analysis: errorMessage
+                };
+            }
+        }
+
         analyzeBtn.addEventListener('click', async () => {
-            const file = fileInput.files[0];
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append('file', file);
-
+            if (!imagePreview.src) return;
+            
             loading.classList.remove('hidden');
             analyzeBtn.classList.add('hidden');
             results.classList.add('hidden');
 
             try {
-                const response = await fetch('/analyze', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
+                const response = await analyzeImageWithGemini(imagePreview.src);
                 
-                if (data.success) {
-                    // Display the pre-formatted text as is
-                    analysisResults.innerText = data.analysis;
+                if (response.success) {
+                    analysisResults.innerText = response.analysis;
                     results.classList.remove('hidden');
                 } else {
-                    throw new Error('Analysis failed');
+                    analysisResults.innerText = response.analysis;
+                    analysisResults.classList.add('text-red-500');
+                    results.classList.remove('hidden');
                 }
             } catch (error) {
                 analysisResults.innerText = 'An error occurred during analysis. Please try again.';
+                analysisResults.classList.add('text-red-500');
                 results.classList.remove('hidden');
             } finally {
                 loading.classList.add('hidden');
