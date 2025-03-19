@@ -261,6 +261,7 @@ If you cannot make a confident prediction for any metric, please state so rather
             try {
                 console.log("Initializing Google Generative AI with API key");
                 // Initialize the Generative AI SDK
+                window.GoogleGenerativeAI = GoogleGenerativeAI;
                 const genAI = new GoogleGenerativeAI(apiKey);
                 
                 console.log("Creating model instance");
@@ -271,43 +272,56 @@ If you cannot make a confident prediction for any metric, please state so rather
                 // Prepare the image for the API
                 const imageData = imageBase64.split(',')[1]; // Remove the data URL prefix
                 
-                console.log("Sending request to Gemini API");
-                // Create parts for the request
-                const parts = [
-                    {text: PROMPT_TEMPLATE},
-                    {
-                        inlineData: {
-                            mimeType: "image/jpeg",
-                            data: imageData
-                        }
-                    }
-                ];
-                
-                // Send the request to Gemini
-                const result = await model.generateContent({
-                    contents: [{ role: "user", parts }],
-                    generationConfig: {
-                        temperature: 0.4,
-                        topK: 32,
-                        topP: 1,
-                        maxOutputTokens: 4096,
-                    },
-                });
-                
-                console.log("Received response from Gemini API");
-                const response = result.response;
-                const text = response.text();
-                
-                // Clean the formatting
-                const cleanedText = text
-                    .replace(/#+\s/g, '') // Remove headers
-                    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-                    .replace(/\*(.*?)\*/g, '$1'); // Remove italic
-                
-                return {
-                    success: true,
-                    analysis: cleanedText
+                // Create the generation config
+                const generationConfig = {
+                  temperature: 0.4,
+                  topK: 32,
+                  topP: 1,
                 };
+                
+                console.log("Creating image part");
+                // Create the image part object
+                const imagePart = {
+                  inlineData: {
+                    mimeType: "image/jpeg",
+                    data: imageData
+                  }
+                };
+                
+                console.log("Sending request to Gemini API");
+                try {
+                    // Try the simplified approach with the image and prompt
+                    const result = await model.generateContent([
+                        PROMPT_TEMPLATE,
+                        imagePart
+                    ]);
+                    
+                    console.log("Received response from Gemini API", result);
+                    const text = result.response.text();
+                    
+                    return {
+                        success: true,
+                        analysis: text
+                    };
+                } catch (modelError) {
+                    console.error("Model error:", modelError);
+                    // Fallback approach - try a different API call style
+                    try {
+                        console.log("Trying fallback approach");
+                        const prompt = PROMPT_TEMPLATE;
+                        const chat = model.startChat();
+                        const result = await chat.sendMessage([prompt, imagePart]);
+                        console.log("Got response from fallback", result);
+                        
+                        return {
+                            success: true,
+                            analysis: result.response.text()
+                        };
+                    } catch (fallbackError) {
+                        console.error("Fallback error:", fallbackError);
+                        throw fallbackError;
+                    }
+                }
             } catch (error) {
                 console.error("Error analyzing image:", error);
                 
@@ -319,6 +333,8 @@ If you cannot make a confident prediction for any metric, please state so rather
                     errorMessage = "Network error. Please check your internet connection and try again.";
                 } else if (error.message && error.message.includes("quota")) {
                     errorMessage = "API quota exceeded. Please try again later or use a different API key.";
+                } else if (error.message && error.message.includes("cors")) {
+                    errorMessage = "CORS error. The Gemini API restricted the request from this domain. Try using a VPN or different browser.";
                 }
                 
                 return {
