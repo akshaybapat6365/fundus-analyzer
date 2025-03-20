@@ -1,34 +1,33 @@
 # Fundus Image Analyzer
 
-![Fundus Analyzer Banner](https://i.imgur.com/example.png)
-
 A web application that analyzes fundus (retinal) images using Google's Gemini AI to predict age, A1C levels, and LDL Cholesterol levels from retinal characteristics.
 
 ## 🌟 Features
 
-- **Dark Theme UI**: Pure black background with sleek, modern design inspired by Shadcn UI
+- **AI-Powered Analysis**: Leverages Google's Gemini Vision models for detailed fundus image analysis
 - **Client-side Processing**: All image processing happens in your browser
-- **Advanced Analysis**: Uses Google's Gemini 2.0 AI model for precise retinal image analysis  
+- **Advanced Analysis**: Uses Google's Gemini Pro Vision model for precise retinal image analysis  
 - **Confidence Levels**: Provides confidence percentages with each prediction
 - **No Server Required**: Runs entirely in the browser with direct API communication
 - **Privacy Focused**: Your images never leave your browser except to be processed by Google's API
 
 ## 🚀 Live Demo
 
-[Access the live application](https://yourusername.github.io/fundus-analyzer/)
+[Access the live application](https://akshaybapat6365.github.io/fundus-analyzer/)
 
-## 📸 Screenshot
-
-![Application Screenshot](https://i.imgur.com/example2.png)
+Direct links:
+- [Main version (direct.html)](https://akshaybapat6365.github.io/fundus-analyzer/direct.html)
+- [Alternative version (simple.html)](https://akshaybapat6365.github.io/fundus-analyzer/simple.html)
 
 ## 🔑 API Key
 
-You need a valid Google Gemini API key to use this application. The app uses a specific model:
-- `gemini-2.0-flash-thinking-exp-01-21`
+The main version at direct.html already includes an API key for your convenience.
 
-Get your API key from [Google AI Studio](https://makersuite.google.com/).
+If you need your own API key (for the simple.html version), get it from [Google AI Studio](https://makersuite.google.com/app/apikey).
 
-Your API key is stored only in your browser's local storage and is never sent to our servers.
+The app uses these models:
+- `gemini-pro-vision` (primary)
+- `gemini-1.5-pro` (fallback)
 
 ## 🔒 Privacy
 
@@ -40,7 +39,7 @@ To run this project locally:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/fundus-analyzer.git
+   git clone https://github.com/akshaybapat6365/fundus-analyzer.git
    ```
 
 2. Navigate to the project directory:
@@ -48,19 +47,18 @@ To run this project locally:
    cd fundus-analyzer
    ```
 
-3. Open the `index.html` file in your browser or use a local development server:
+3. Open the `direct.html` file in your browser or use a local development server:
    ```
    python3 -m http.server
    ```
 
-4. Access the application at `http://localhost:8000`
+4. Access the application at `http://localhost:8000/direct.html`
 
-## 🔧 Technologies Used
+## 📚 Documentation
 
-- HTML5/CSS3
-- JavaScript (ES6+)
-- Google Generative AI SDK
-- Tailwind CSS
+For detailed information:
+- [VERSIONS.md](https://github.com/akshaybapat6365/fundus-analyzer/blob/main/VERSIONS.md) - Version history and lessons learned
+- [BENCHMARK.md](https://github.com/akshaybapat6365/fundus-analyzer/blob/main/BENCHMARK.md) - Implementation comparison
 
 ## 📄 License
 
@@ -68,4 +66,4 @@ MIT License
 
 ## 👥 Contributing
 
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/yourusername/fundus-analyzer/issues). 
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/akshaybapat6365/fundus-analyzer/issues). 
