@@ -178,24 +178,7 @@
         }
         
         // Define the prompt template
-        const PROMPT_TEMPLATE = `
-Analyze this fundus image and provide the following information:
-
-1. Estimated age of the person (within 2 years)
-- Include confidence level (%)
-- Base this on retinal characteristics, vessel patterns, and any age-related changes
-
-2. Estimated A1C level
-- Include confidence level (%)
-- Consider vessel health, any diabetic changes, and microaneurysms if present
-- Provide the value in % with a normal range of 4-5.6%
-
-3. Estimated LDL Cholesterol level
-- Include confidence level (%)
-- Look for signs of arteriolar narrowing, vessel changes
-- Provide the value in mg/dL with optimal being <100 mg/dL
-
-Format your response in plain text without any markdown formatting. For each prediction, explain the key indicators that led to your assessment.`;
+        const PROMPT_TEMPLATE = `Analyze the provided fundus image, emphasizing retinal characteristics such as vessel patterns, optic disc morphology, macular appearance, and any visible age-related features like drusen or vascular tortuosity. Estimate the individual's age within ±2 years, referencing specific indicators including arteriolar-to-venular ratio, retinal pigmentation variations, and signs of retinal thinning or degeneration typical for certain age ranges; include your confidence level as a percentage. Additionally, estimate the individual's HbA1c level (normal range: 4–5.6%), considering diabetic markers like microaneurysms, retinal hemorrhages, neovascularization, or other signs of diabetic retinopathy, and provide your confidence percentage. Finally, estimate the LDL cholesterol level (optimal: <100 mg/dL) based on indicators such as lipid deposits, arteriolar narrowing, or vessel abnormalities; also include your confidence percentage. Clearly describe the retinal indicators that influenced each prediction. Provide your analysis in plain text without markdown formatting.`;
         
         // Format the response as clean text with clear sections
         function formatResponse(text) {
